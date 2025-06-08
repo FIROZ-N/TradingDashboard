@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SMC Trading Dashboard</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #f5f7fa;
+      color: #333;
+    }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 240px;
+      background: #1e1e2f;
+      color: white;
+      padding-top: 40px;
+      position: fixed;
+      height: 100vh;
+    }
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 22px;
+    }
+    .sidebar a {
+      display: block;
+      padding: 14px 24px;
+      color: #ccc;
+      text-decoration: none;
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #007bff;
+      color: white;
+    }
+    .content {
+      margin-left: 240px;
+      padding: 40px;
+      width: 100%;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+      margin-bottom: 30px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      resize: none;
+    }
+    .form-group input[type="checkbox"] {
+      width: auto;
+      transform: scale(1.2);
+      margin-right: 8px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+    .entry-box div {
+      margin-bottom: 16px;
+      background: #f1f4f8;
+      padding: 14px;
+      border-left: 4px solid #007bff;
+      border-radius: 10px;
+    }
+    .hidden { display: none; }
+    .flex-row {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .flex-row input {
+      max-width: 200px;
+    }
+  </style>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <h2>SMC Journal</h2>
+    <a onclick="showTab('counters')">Trade Counters</a>
+    <a class="active" onclick="showTab('checklist')">Checklist</a>
+    <a onclick="showTab('create')">Create Trade</a>
+    <a onclick="showTab('history')">Trade History</a>
+  </div>
+
+  <div class="content">
+
+    <!-- ✅ Checklist Tab -->
+    <div id="checklist" class="tab">
+      <h2>Trading Checklist</h2>
+      <div class="card">
+        <div class="form-group">
+          <label>Day Direction</label>
+          <input list="directionOptions" id="direction" placeholder="Type or select">
+          <datalist id="directionOptions">
+            <option value="Bullish"></option>
+            <option value="Bearish"></option>
+            <option value="Neutral"></option>
+          </datalist>
+        </div>
+
+        <div class="form-group"><label><input type="checkbox" id="tradingRange"> Marked 4H Trading Range?</label></div>
+        <div class="form-group"><label><input type="checkbox" id="bos"> Marked 1H BoS?</label></div>
+        <div class="form-group"><label>Key Levels</label><textarea id="keyLevels" placeholder="Enter key levels"></textarea></div>
+        <div class="form-group"><label><input type="checkbox" id="choch"> Marked CHoCH in 15 Min?</label></div>
+        <div class="form-group"><label>Entry Setup</label><textarea id="entrySetup" placeholder="Entry setup details"></textarea></div>
+        <div class="form-group">
+          <label>Zone</label>
+          <input list="zoneOptions" id="entryZone" placeholder="Type or select zone">
+          <datalist id="zoneOptions">
+            <option value="Demand Zone"></option>
+            <option value="Supply Zone"></option>
+            <option value="Support"></option>
+            <option value="Resistance"></option>
+          </datalist>
+        </div>
+        <div class="form-group"><label><input type="checkbox" id="risk"> Risk: 1:10</label></div>
+      </div>
+    </div>
+
+    <!-- 🛠️ Create Trade Tab -->
+    <div id="create" class="tab hidden">
+      <h2>Create Trade</h2>
+      <div class="card">
+        <div class="form-group"><label>Trade #</label><input type="text" id="tradeNo" placeholder="Trade number"></div>
+        <div class="form-group">
+          <label>Day Direction</label>
+          <input list="directionOptions" id="jDirection" placeholder="Type or select">
+        </div>
+        <div class="form-group"><label>Trading Range</label><select id="jTradingRange"><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label>1H BoS Marked?</label><select id="jBoS"><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label>CHoCH in 15 Minute?</label><select id="jChoch"><option>Yes</option><option>No</option></select></div>
+        <div class="form-group">
+          <label>Key Levels</label>
+          <input list="levelsOptions" id="jLevels" placeholder="Type or select key levels">
+          <datalist id="levelsOptions">
+            <option value="FVG With Breaker Block"></option>
+            <option value="OB 50% Entry"></option>
+            <option value="Major Swing Low"></option>
+            <option value="Major Swing High"></option>
+          </datalist>
+        </div>
+        <div class="form-group"><label>Entry Info</label><textarea id="jEntry" placeholder="Entry information"></textarea></div>
+        <div class="form-group"><label>Result</label><select id="jResult"><option>Win</option><option>Loss</option><option>BE</option></select></div>
+        <div class="form-group"><label>Profit ($)</label><input type="number" id="jProfit" value="0" min="0"></div>
+        <div class="form-group"><label>Loss ($)</label><input type="number" id="jLoss" value="0" min="0"></div>
+        <button onclick="saveJournal()">Save Trade</button>
+      </div>
+    </div>
+
+    <!-- 📜 Trade History Tab -->
+    <div id="history" class="tab hidden">
+      <h2>Trade History</h2>
+      <div class="card">
+        <div class="entry-box" id="journalLog"></div>
+      </div>
+    </div>
+
+    <!-- 💹 Trade Counters Tab -->
+    <div id="counters" class="tab hidden">
+      <div class="card" style="background: #e9f4ff;">
+        <h3>📊 Account Summary</h3>
+        <p><strong>Total Balance:</strong> $<span id="balance">0</span></p>
+        <p><strong>Total Profit:</strong> $<span id="totalProfit">0</span></p>
+        <p><strong>Total Loss:</strong> $<span id="totalLoss">0</span></p>
+
+        <div class="form-group flex-row">
+          <input type="number" id="mainAmount" placeholder="Enter Main Amount">
+          <button onclick="setMainAmount()">Set Main Amount</button>
+          <button onclick="resetAll()" style="background:#dc3545;">Reset All Data</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📈 Trade Counters</h3>
+        <p><strong>Total Trades:</strong> <span id="totalTrades">0</span></p>
+        <p><strong>Wins:</strong> <span id="totalWins">0</span></p>
+        <p><strong>Losses:</strong> <span id="totalLosses">0</span></p>
+        <p><strong>Breakevens:</strong> <span id="totalBEs">0</span></p>
+        <canvas id="profitChart" height="100"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll(".sidebar a");
+
+  function showTab(id) {
+    document.querySelectorAll(".tab").forEach(tab => tab.classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+    tabs.forEach(link => link.classList.remove("active"));
+    [...tabs].find(link => link.textContent.toLowerCase().includes(id)).classList.add("active");
+    if (id === "history") displayLog();
+    if (id === "counters") {
+      updateTotals();
+      updateTradeCounters();
+    }
+  }
+
+  function saveJournal() {
+    const profit = parseFloat(jProfit.value) || 0;
+    const loss = parseFloat(jLoss.value) || 0;
+
+    const trade = {
+      number: tradeNo.value,
+      direction: jDirection.value,
+      range: jTradingRange.value,
+      bos: jBoS.value,
+      choch: jChoch.value,
+      levels: jLevels.value,
+      entry: jEntry.value,
+      result: jResult.value,
+      profit: profit,
+      loss: loss
+    };
+
+    let log = JSON.parse(localStorage.getItem("backtestLog") || "[]");
+    log.push(trade);
+    localStorage.setItem("backtestLog", JSON.stringify(log));
+
+    let totalProfit = parseFloat(localStorage.getItem("totalProfit") || "0") + profit;
+    let totalLoss = parseFloat(localStorage.getItem("totalLoss") || "0") + loss;
+    let main = parseFloat(localStorage.getItem("mainAmount") || "0");
+
+    localStorage.setItem("totalProfit", totalProfit);
+    localStorage.setItem("totalLoss", totalLoss);
+    localStorage.setItem("balance", main + totalProfit - totalLoss);
+
+    alert("Trade saved!");
+    displayLog();
+    updateTotals();
+    updateTradeCounters();
+
+    // Clear inputs
+    tradeNo.value = '';
+    jDirection.value = '';
+    jTradingRange.value = 'Yes';
+    jBoS.value = 'Yes';
+    jChoch.value = 'Yes';
+    jLevels.value = '';
+    jEntry.value = '';
+    jResult.value = 'Win';
+    jProfit.value = 0;
+    jLoss.value = 0;
+  }
+
+  function updateTotals() {
+    document.getElementById("totalProfit").textContent = localStorage.getItem("totalProfit") || "0";
+    document.getElementById("totalLoss").textContent = localStorage.getItem("totalLoss") || "0";
+    document.getElementById("balance").textContent = localStorage.getItem("balance") || "0";
+  }
+
+  function updateTradeCounters() {
+    const log = JSON.parse(localStorage.getItem("backtestLog") || "[]");
+    let wins = 0, losses = 0, bes = 0, profitData = [];
+
+    log.forEach(t => {
+      if (t.result === "Win") wins++;
+      else if (t.result === "Loss") losses++;
+      else if (t.result === "BE") bes++;
+      profitData.push((parseFloat(t.profit) || 0) - (parseFloat(t.loss) || 0));
+    });
+
+    document.getElementById("totalTrades").textContent = log.length;
+    document.getElementById("totalWins").textContent = wins;
+    document.getElementById("totalLosses").textContent = losses;
+    document.getElementById("totalBEs").textContent = bes;
+
+    renderProfitChart(profitData);
+  }
+
+  function renderProfitChart(data) {
+    const ctx = document.getElementById('profitChart').getContext('2d');
+    if (window.profitChart) window.profitChart.destroy();
+    window.profitChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map((_, i) => `Trade ${i + 1}`),
+        datasets: [{
+          label: 'Profit/Loss',
+          data: data,
+          fill: false,
+          borderColor: '#007bff',
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  function displayLog() {
+    const log = JSON.parse(localStorage.getItem("backtestLog") || "[]");
+    journalLog.innerHTML = log.map(t => `
+      <div><strong>Trade #${t.number}</strong><br>
+      Direction: ${t.direction}, Range: ${t.range}, BoS: ${t.bos}, CHoCH: ${t.choch}<br>
+      Levels: ${t.levels}, Entry: ${t.entry}<br>
+      <strong>Result:</strong> ${t.result} | <strong>Profit:</strong> $${t.profit || 0}, <strong>Loss:</strong> $${t.loss || 0}</div>
+    `).join("");
+  }
+
+  function setMainAmount() {
+    const main = parseFloat(document.getElementById("mainAmount").value) || 0;
+    const profit = parseFloat(localStorage.getItem("totalProfit") || "0");
+    const loss = parseFloat(localStorage.getItem("totalLoss") || "0");
+    localStorage.setItem("mainAmount", main);
+    localStorage.setItem("balance", main + profit - loss);
+    updateTotals();
+    alert("Main amount set.");
+  }
+
+  function resetAll() {
+    if (confirm("Are you sure you want to reset all data?")) {
+      localStorage.clear();
+      journalLog.innerHTML = "";
+      updateTotals();
+      updateTradeCounters();
+      alert("All data has been reset.");
+    }
+  }
+
+  // Initialize on load
+  updateTotals();
+  updateTradeCounters();
+  displayLog();
+</script>
+</body>
+</html>
